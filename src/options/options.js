@@ -1,5 +1,6 @@
 import { AIService } from '../lib/ai_service.js';
 import { Organizer } from '../lib/organizer.js';
+import { Logger } from '../lib/logger.js';
 
 const DEFAULTS = {
     openai: {
@@ -23,7 +24,9 @@ const DEFAULTS = {
 document.addEventListener('DOMContentLoaded', restoreOptions);
 document.getElementById('btnSave').addEventListener('click', saveOptions);
 document.getElementById('btnTest').addEventListener('click', testConnection);
+document.getElementById('btnTest').addEventListener('click', testConnection);
 document.getElementById('apiProvider').addEventListener('change', handleProviderChange);
+document.getElementById('btnRefreshLogs').addEventListener('click', refreshLogs);
 
 // Restore Event listener for the Start button
 
@@ -118,16 +121,20 @@ async function testConnection() {
     btnTest.disabled = true;
 
     try {
+        Logger.log('Testing API Connection...');
         const ai = new AIService(config);
         const result = await ai.testConnection();
 
         if (result.success) {
             showStatus('连接成功！', 'green');
+            Logger.log('API Connection Test Passed', 'info');
         } else {
             showStatus(`连接失败: ${result.message}`, 'red');
+            Logger.error(`API Connection Test Failed: ${result.message}`);
         }
     } catch (error) {
         showStatus(`错误: ${error.message}`, 'red');
+        Logger.error(`API Connection Error: ${error.message}`);
     } finally {
         btnTest.textContent = originalText;
         btnTest.disabled = false;
@@ -298,6 +305,8 @@ async function startAnalysis(options = {}) {
     btnStop.onclick = () => organizer.cancel();
 
     organizer.onLog = (msg, type) => {
+        Logger.log(`[Batch] ${msg}`, type || 'info'); // Persist log
+
         const span = document.createElement('div');
         span.textContent = `> ${msg}`;
         if (type === 'error') span.style.color = 'red';
@@ -746,6 +755,8 @@ document.getElementById('btnExecuteInfo').addEventListener('click', async () => 
     btnStop.onclick = () => organizer.cancel();
 
     organizer.onLog = (msg, type) => {
+        Logger.log(`[Exec] ${msg}`, type || 'info'); // Persist log
+
         const span = document.createElement('div');
         span.textContent = `> ${msg}`;
         if (type === 'error') span.style.color = 'red';
@@ -785,8 +796,50 @@ document.getElementById('btnExecuteInfo').addEventListener('click', async () => 
     }
 });
 
+
+
 document.getElementById('btnFinish').addEventListener('click', () => {
     showStep('welcome');
     document.getElementById('exec-done-actions').classList.add('hidden');
     // Reload?
 });
+
+// Logs Logic
+async function refreshLogs() {
+    const container = document.getElementById('systemLogs');
+    if (!container) return;
+
+    try {
+        const data = await chrome.storage.local.get('systemLogs');
+        renderLogs(data.systemLogs);
+    } catch (e) {
+        container.textContent = '读取日志失败: ' + e.message;
+    }
+}
+
+function renderLogs(logs) {
+    const container = document.getElementById('systemLogs');
+    if (!container) return;
+
+    if (logs && logs.length > 0) {
+        container.innerHTML = logs.map(l => `<div style="border-bottom:1px solid #eee; padding:2px;">${l}</div>`).join('');
+    } else {
+        container.innerHTML = '<div style="text-align: center;">暂无日志 (No Logs)</div>';
+    }
+}
+
+// Auto-refresh via Storage Listener
+chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local' && changes.systemLogs) {
+        renderLogs(changes.systemLogs.newValue);
+    }
+});
+
+// Fallback Polling (Every 2 seconds) to ensure updates even if listener misses
+setInterval(refreshLogs, 2000);
+
+// Initial load
+refreshLogs();
+
+// Initial load
+refreshLogs();

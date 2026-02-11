@@ -61,6 +61,17 @@
                 <button id="btnSave" class="primary-btn">保存配置</button>
             </div>
             <div id="statusMessage" class="status-msg"></div>
+
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+            <div class="logs-section">
+                <h4>📜 系统日志 (Debugging)</h4>
+                <div id="systemLogs"
+                    style="font-size: 0.8rem; color: #666; max-height: 200px; overflow-y: auto; background: #f9f9f9; padding: 10px; border-radius: 4px;">
+                    <div style="text-align: center;">暂无日志...</div>
+                </div>
+                <button id="btnRefreshLogs" class="secondary-btn"
+                    style="width: 100%; margin-top: 5px; font-size: 0.8rem;">刷新日志</button>
+            </div>
         </aside>
 
         <!-- Right Panel: Dashboard -->

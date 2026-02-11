@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手动整理书签</title>
+    <link rel="stylesheet" href="options.css"> <!-- Reuse partial styles if possible, but better separate -->
+    <link rel="stylesheet" href="quick_organize.css">
+</head>
+
+<body>
+    <div class="quick-container">
+        <h3>📂 修改书签位置</h3>
+
+        <div class="bookmark-info">
+            <div id="bm-title" class="bm-title">Loading...</div>
+            <div id="bm-url" class="bm-url">...</div>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="folder-search" placeholder="🔍 搜索文件夹..." autofocus>
+        </div>
+
+        <div id="folder-tree" class="folder-tree-view">
+            <!-- Folders injected here -->
+            <div class="loading">加载文件夹中...</div>
+        </div>
+
+        <div class="actions">
+            <button id="btnCancel" class="secondary-btn">取消</button>
+            <button id="btnMove" class="primary-btn" disabled>确认移动</button>
+        </div>
+    </div>
+    <script type="module" src="quick_organize.js"></script>
+</body>
+
+</html>

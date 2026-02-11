@@ -1,0 +1,160 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #f9f9f9;
+    color: #333;
+    overflow: hidden;
+}
+
+.quick-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+h3 {
+    margin: 0 0 15px 0;
+    font-size: 1.2rem;
+    color: #4CAF50;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.bookmark-info {
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+}
+
+.bm-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bm-url {
+    font-size: 0.8rem;
+    color: #999;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-box {
+    margin-bottom: 10px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 0.95rem;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.folder-tree-view {
+    flex: 1;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.folder-node {
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #555;
+    transition: background 0.1s;
+    font-size: 0.9rem;
+}
+
+.folder-node:hover {
+    background: #f0f0f0;
+}
+
+.folder-node.selected {
+    background: #e8f5e9;
+    color: #2e7d32;
+    font-weight: 500;
+}
+
+.folder-node.hidden {
+    display: none;
+}
+
+.folder-icon {
+    font-size: 1.1em;
+}
+
+.folder-path-hint {
+    color: #aaa;
+    font-size: 0.8rem;
+    margin-left: auto;
+}
+
+.actions {
+    margin-top: 15px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.primary-btn,
+.secondary-btn {
+    padding: 8px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    border: none;
+}
+
+.primary-btn {
+    background: #4CAF50;
+    color: white;
+}
+
+.secondary-btn {
+    background: white;
+    border: 1px solid #ddd;
+    color: #666;
+}
+
+.primary-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.primary-btn:hover:not(:disabled) {
+    background: #45a049;
+}
+
+.secondary-btn:hover {
+    background: #f5f5f5;
+}
+
+.loading {
+    color: #999;
+    text-align: center;
+    margin-top: 20px;
+}

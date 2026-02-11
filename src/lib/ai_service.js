@@ -21,15 +21,24 @@ export class AIService {
             : 'Use English for all categories.';
 
         const prompt = `
-You are a bookmark classifier.
-Context: Existing folders: "${folderContext}"
-Task: Determine the best folder for this bookmark.
-Bookmark: "${bookmark.title}" (${bookmark.url})
+You are an expert bookmark classifier for a software engineer.
+Existing Folder Structure (Top Levels/Key Paths): "${folderContext}"
+
+Task: Classify the following bookmark into the MOST APPROPRIATE folder.
+Bookmark Title: "${bookmark.title}"
+Bookmark URL: "${bookmark.url}"
 
 Rules:
-1. Use an existing folder from Context if suitable.
-2. Otherwise, create a concise new category. ${langInstruction}
-3. Output JSON ONLY: { "path": "Folder/Subfolder" }
+1. **Priority**: Use an existing folder path from the list above if it fits well.
+2. **Fallback**: If no existing folder fits, create a new logical category path (e.g., "Technology/AI", "Tools/Design").
+3. **Language**: ${langInstruction}
+4. **Reason**: Briefly explain why you chose this path (max 10 words).
+
+Output JSON format:
+{
+  "path": "Target/Folder/Path",
+  "reason": "Brief explanation"
+}
 `;
         // Re-use callOpenAICompatible or callGemini logic?
         // Let's create a shared internal caller or just call existing one
@@ -47,8 +56,11 @@ Rules:
         }
 
         // result is the JSON object.
-        // My prompt asks for { path: ... }
-        return result.path;
+        // My prompt asks for { path: ..., reason: ... }
+        if (result.path) {
+            return { path: result.path, reason: result.reason || 'AI Decision' };
+        }
+        return null;
     }
 
     async testConnection() {

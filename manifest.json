@@ -5,7 +5,8 @@
   "description": "Intelligently organize your Chrome bookmarks using AI.",
   "permissions": [
     "bookmarks",
-    "storage"
+    "storage",
+    "notifications"
   ],
   "action": {
     "default_popup": "src/popup/popup.html",
