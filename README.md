@@ -1,4 +1,4 @@
-# AI 书签整理器 (Chrome 扩展)
+# AutoMark (Chrome 扩展)
 
 这是一款强大的 Chrome 浏览器扩展，利用先进的 AI 模型（OpenAI GPT-4, Google Gemini, DeepSeek 等）智能分析、分类并清理您的浏览器书签，助您轻松维护整洁有序的知识库。
 

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "AI Bookmark Organizer",
+  "name": "AutoMark",
   "version": "1.0.0",
-  "description": "Intelligently organize your Chrome bookmarks using AI.",
+  "description": "AutoMark: Intelligently organize your Chrome bookmarks using AI.",
   "permissions": [
     "bookmarks",
     "storage",
@@ -10,7 +10,7 @@
   ],
   "action": {
     "default_popup": "src/popup/popup.html",
-    "default_title": "AI Bookmark Organizer"
+    "default_title": "AutoMark"
   },
   "options_page": "src/options/options.html",
   "background": {
