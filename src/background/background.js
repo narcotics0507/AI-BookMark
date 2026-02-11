@@ -9,6 +9,10 @@ Logger.log('Service Worker Initialized');
 // Undo/Correction Data Store
 const undoMap = new Map(); // <notificationId, { bookmarkId, originalParentId, movedToId }>
 
+// Smart Debounce Queue: <bookmarkId, { timeoutId, startTime }>
+const processingQueue = new Map();
+const DEBOUNCE_DELAY = 4000; // 4 seconds
+
 // Cache for folder structure to speed up AI context
 let folderCache = null;
 let lastCacheTime = 0;
@@ -29,23 +33,22 @@ async function getFolderContext(bm) {
     return allPaths;
 }
 
-// Listen for new bookmarks
-chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
-    // 1. Basic checks
-    if (!bookmark.url) return; // Ignore folders
-
-    // 2. Check Settings
-    const config = await chrome.storage.sync.get(['autoCategorize', 'apiProvider', 'apiEndpoint', 'apiKey', 'modelName', 'targetLanguage']);
-    if (!config.autoCategorize || !config.apiKey) return;
-
-    Logger.log(`New bookmark detected: ${bookmark.title}`);
-
-    // Debounce check (optional, but good for imports)
-    // For now, let's process one by one. If import happens, this might spam.
-    // Ideally user shouldn't enabling auto-cat during import.
-
+// Core Processing Logic (Extracted)
+async function processBookmark(id) {
+    // Remove from queue processing
+    processingQueue.delete(id);
 
     try {
+        // Fetch latest bookmark data (title/url might have changed during debounce)
+        const [bookmark] = await new Promise(r => chrome.bookmarks.get(id, r));
+        if (!bookmark || !bookmark.url) return;
+
+        // 2. Check Settings
+        const config = await chrome.storage.sync.get(['autoCategorize', 'apiProvider', 'apiEndpoint', 'apiKey', 'modelName', 'targetLanguage']);
+        if (!config.autoCategorize || !config.apiKey) return;
+
+        Logger.log(`Processing bookmark after debounce: ${bookmark.title}`);
+
         const ai = new AIService(config);
         const bm = new BookmarkManager();
 
@@ -59,12 +62,9 @@ chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
 
         if (result && result.path) {
             let targetPath = result.path;
-            const reason = result.reason;
             const originalParentId = bookmark.parentId;
 
             // Handle Root Folders in Path
-            // AI might return "Bookmarks Bar/Folder", but ensureFolder('1') expects "Folder"
-            // We need to check if the path starts with the name of the root folders.
             const [barNode] = await new Promise(r => chrome.bookmarks.get('1', r));
             const [otherNode] = await new Promise(r => chrome.bookmarks.get('2', r));
 
@@ -93,6 +93,13 @@ chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
                 targetId = await bm.ensureFolder(relativePath, rootId);
             }
             let isSamePath = false;
+            // Re-check parent in case user moved it at the very last millisecond
+            const [currentBm] = await new Promise(r => chrome.bookmarks.get(id, r));
+            if (currentBm.parentId !== originalParentId) {
+                Logger.log('Bookmark moved externally during processing. Aborting move.');
+                return;
+            }
+
             if (targetId === originalParentId) {
                 Logger.log('Target is same as current. No move, but notifying user.');
                 isSamePath = true;
@@ -101,24 +108,9 @@ chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
                 Logger.log(`Moved to ${targetPath} (ID: ${targetId})`);
             }
 
-            // 6. Notify User (Top-Right Popup Window)
-            // Calculate position: Top-Right of screen
-            // Note: system.display API needs permission, we'll just guess user wants it top-right.
-            // Chrome windows origin is top-left.
-
-            // We can't easily get screen width in Service Worker without 'system.display'.
-            // Compromise: Use a sensible default like "Left: very large number" which Chrome might clamp,
-            // or just use 0,0 (Top Left) or ask user to position it.
-            // Actually, 'left' max value usually clamps to right edge. let's try 9999.
-            // Wait, chrome.windows.create 'left' logic:
-
-            // Let's use a conservative small popup.
+            // 6. Notify User
             const width = 450;
             const height = 200;
-
-            // Try to position top-right. 
-            // Assuming 1920x1080, left=1500. 
-            // Chrome might handle out-of-bounds by clamping.
             chrome.windows.create({
                 url: `src/options/quick_organize_notify.html?id=${id}&path=${encodeURIComponent(targetPath)}&old=${originalParentId}&same=${isSamePath}&targetId=${targetId}`,
                 type: 'popup',
@@ -133,8 +125,6 @@ chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
         }
     } catch (e) {
         Logger.error(`Auto-categorize failed: ${e.message}`);
-
-        // Notify User of Error
         try {
             chrome.windows.create({
                 url: `src/options/quick_organize_notify.html?error=${encodeURIComponent(e.message)}&id=${id}`,
@@ -145,9 +135,39 @@ chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
                 top: 50,
                 focused: true
             });
-        } catch (winErr) {
-            Logger.error(`Failed to show error popup: ${winErr.message}`);
-        }
+        } catch (winErr) { }
+    }
+}
+
+// 1. On Created -> Start Timer
+chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
+    if (!bookmark.url) return; // Ignore folders immediately
+
+    // Check settings early to avoid setting timers unnecessarily?
+
+    Logger.log(`New bookmark created: ${bookmark.title}. Waiting ${DEBOUNCE_DELAY}ms...`);
+
+    const timeoutId = setTimeout(() => processBookmark(id), DEBOUNCE_DELAY);
+    processingQueue.set(id, { timeoutId, startTime: Date.now() });
+});
+
+
+
+// 3. On Moved -> Cancel Timer (User manually filed it)
+chrome.bookmarks.onMoved.addListener((id, moveInfo) => {
+    if (processingQueue.has(id)) {
+        const item = processingQueue.get(id);
+        clearTimeout(item.timeoutId);
+        processingQueue.delete(id);
+        Logger.log(`Bookmark ${id} moved manually. Auto-categorization cancelled.`);
     }
 });
-// Note: Notification listeners removed as we switched to Window UI
+
+// 4. On Removed -> Cancel Timer
+chrome.bookmarks.onRemoved.addListener((id, removeInfo) => {
+    if (processingQueue.has(id)) {
+        const item = processingQueue.get(id);
+        clearTimeout(item.timeoutId);
+        processingQueue.delete(id);
+    }
+});
