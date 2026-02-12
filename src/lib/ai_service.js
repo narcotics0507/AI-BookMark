@@ -163,6 +163,15 @@ IMPORTANT:
 `;
     }
 
+    _cleanJson(text) {
+        let clean = text.trim();
+        // Remove wrapping ```json ... ``` or ``` ... ```
+        if (clean.startsWith('```')) {
+            clean = clean.replace(/^```(?:json)?/, '').replace(/```$/, '');
+        }
+        return clean.trim();
+    }
+
     async callOpenAICompatible(prompt) {
         // Helper to perform the fetch
         const doFetch = async (url) => {
@@ -245,8 +254,10 @@ IMPORTANT:
 
         const data = await response.json();
         try {
-            return JSON.parse(data.choices[0].message.content);
+            const cleanText = this._cleanJson(data.choices[0].message.content);
+            return JSON.parse(cleanText);
         } catch (e) {
+            console.error('JSON Parse Error:', e, data.choices[0].message.content);
             throw new Error('Failed to parse AI response as JSON');
         }
     }
@@ -277,8 +288,10 @@ IMPORTANT:
 
         const data = await response.json();
         try {
-            return JSON.parse(data.candidates[0].content.parts[0].text);
+            const cleanText = this._cleanJson(data.candidates[0].content.parts[0].text);
+            return JSON.parse(cleanText);
         } catch (e) {
+            console.error('Gemini JSON Parse Error:', e);
             throw new Error('Failed to parse Gemini response as JSON');
         }
     }
