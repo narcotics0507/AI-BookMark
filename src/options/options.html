@@ -83,11 +83,21 @@
                     <p>让 AI 为您重塑书签结构</p>
                 </div>
                 <div class="control-panel">
-                    <button id="btnStartWizard" class="action-btn-large">
-                        <span class="icon">✨</span> 开始智能整理
-                    </button>
-                    <div style="margin-top: 20px; text-align: center; color: #666;">
-                        <small>将引导您选择文件夹、生成计划并审查，最后执行。</small>
+                    <div class="main-actions">
+                        <button id="btnStartWizard" class="action-btn-large">
+                            <span class="icon">✨</span>
+                            <span>开始智能整理</span>
+                        </button>
+                        <button id="btnBackup" class="action-btn-large secondary-large">
+                            <span class="icon">🛡️</span>
+                            <span>备份书签</span>
+                        </button>
+                    </div>
+                    <div style="margin-top: 25px; text-align: center; color: #90a4ae; font-size: 0.9rem;">
+                        <span
+                            style="display:inline-block; vertical-align:middle; background:#f5f5f5; padding:4px 12px; border-radius:12px;">
+                            💡 提示：整理前系统也会自动为您备份
+                        </span>
                     </div>
                 </div>
             </div>
@@ -176,9 +186,16 @@
                     <!-- Plan items injected here -->
                 </div>
 
-                <div class="step-actions">
-                    <button id="btnCancelReview" class="secondary-btn">取消</button>
-                    <button id="btnExecuteInfo" class="primary-btn">确认执行</button>
+                <div class="step-actions" style="flex-direction: column; gap: 15px;">
+                    <label
+                        style="display: flex; align-items: center; gap: 8px; font-weight: 500; color: #2c3e50; cursor: pointer; background: #e3f2fd; padding: 8px 15px; border-radius: 4px; width: fit-content; margin: 0 auto;">
+                        <input type="checkbox" id="chkAutoBackup" checked>
+                        <span>📥 执行前自动备份书签 (推荐)</span>
+                    </label>
+                    <div class="action-buttons-group">
+                        <button id="btnCancelReview" class="secondary-btn">取消</button>
+                        <button id="btnExecuteInfo" class="primary-btn">确认执行</button>
+                    </div>
                 </div>
             </div>
 

@@ -103,57 +103,114 @@ html {
     overflow-y: auto;
 }
 
+/* Hero Section - Premium Card Style */
 .hero-section {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 40px;
+    padding: 20px;
 }
 
 .hero-section h2 {
-    font-size: 1.8rem;
-    margin: 0 0 5px 0;
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+    background: linear-gradient(45deg, #2E7D32, #4CAF50);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
 }
 
 .hero-section p {
+    font-size: 1.1rem;
     color: #666;
     margin: 0;
+    font-weight: 300;
 }
 
-/* Big Start Button */
+/* Control Panel */
+.control-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+}
+
+.main-actions {
+    display: flex;
+    gap: 20px;
+    /* Explicit gap */
+    justify-content: center;
+    width: 100%;
+}
+
+/* Base Large Button */
 .action-btn-large {
-    background: linear-gradient(135deg, #4CAF50, #2E7D32);
-    color: white;
+    position: relative;
     border: none;
-    padding: 15px 40px;
-    font-size: 1.2rem;
-    border-radius: 50px;
+    padding: 16px 32px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 12px;
+    /* Modern rounded corners, not pill */
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    margin: 0 auto;
+    gap: 12px;
+    width: 240px;
+    /* Force consistent size */
 }
 
-.action-btn-large:hover:not(:disabled) {
+/* Primary "Magic" Button - Now matches Backup style (Ghost Blue) */
+.action-btn-large:not(.secondary-large) {
+    background: white;
+    color: #1976D2;
+    /* Slightly darker blue than backup */
+    border: 2px solid #1976D2;
+    box-shadow: 0 4px 15px rgba(25, 118, 210, 0.15);
+}
+
+.action-btn-large:not(.secondary-large):hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+    box-shadow: 0 8px 20px rgba(25, 118, 210, 0.25);
+    background: #e3f2fd;
+    /* Light blue tint on hover */
 }
 
-.action-btn-large:active:not(:disabled) {
+.action-btn-large:not(.secondary-large):active {
     transform: translateY(1px);
+    box-shadow: 0 2px 5px rgba(25, 118, 210, 0.15);
 }
 
-.action-btn-large:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-    box-shadow: none;
+/* Secondary "Backup" Button */
+.action-btn-large.secondary-large {
+    background: white;
+    color: #1976D2;
+    /* Match Primary */
+    border: 2px solid #1976D2;
+    box-shadow: 0 4px 15px rgba(25, 118, 210, 0.15);
 }
 
-/* Progress Bar */
+.action-btn-large.secondary-large:hover {
+    border-color: #1565C0;
+    /* Darker blue on hover */
+    background: #e3f2fd;
+    /* Light blue tint */
+    color: #0D47A1;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(25, 118, 210, 0.25);
+}
+
+.action-btn-large .icon {
+    font-size: 1.4rem;
+}
+
+/* Progress Container */
 .progress-container {
-    margin-top: 25px;
+    margin-top: 30px;
     background: white;
     padding: 15px;
     border-radius: 8px;
@@ -770,15 +827,24 @@ html {
     box-shadow: 0 4px 10px rgba(76, 175, 80, 0.25);
 }
 
+/* Secondary / Cancel Button in Action Bar */
 #btnBackToWelcome {
-    color: #999;
-    border: none;
-    background: transparent;
-    padding: 0 10px;
+    color: #5f6368;
+    background: #fff;
+    border: 1px solid #dadce0;
+    padding: 8px 20px;
+    /* Match height of other buttons */
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
 }
 
 #btnBackToWelcome:hover {
-    color: #666;
-    background: transparent;
-    text-decoration: underline;
+    background-color: #f1f3f4;
+    color: #202124;
+    border-color: #dadce0;
+    text-decoration: none;
+    box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3);
 }

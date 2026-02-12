@@ -6,7 +6,8 @@
   "permissions": [
     "bookmarks",
     "storage",
-    "notifications"
+    "notifications",
+    "downloads"
   ],
   "action": {
     "default_popup": "src/popup/popup.html",

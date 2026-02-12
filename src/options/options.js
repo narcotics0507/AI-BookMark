@@ -1,6 +1,7 @@
 import { AIService } from '../lib/ai_service.js';
 import { Organizer } from '../lib/organizer.js';
 import { Logger } from '../lib/logger.js';
+import { BookmarkExporter } from '../lib/exporter.js';
 
 const DEFAULTS = {
     openai: {
@@ -229,6 +230,30 @@ document.getElementById('btnConfirmSelection').addEventListener('click', () => s
 document.getElementById('btnCheckDeadLinksOnly').addEventListener('click', () => startAnalysis({ skipAI: true }));
 document.getElementById('btnCheckDuplicates').addEventListener('click', () => startAnalysis({ skipAI: true, checkDuplicates: true }));
 document.getElementById('btnAnalyzeBack').addEventListener('click', () => showStep('select'));
+
+// Backup Logic
+document.getElementById('btnBackup').addEventListener('click', async () => {
+    try {
+        const btn = document.getElementById('btnBackup');
+        const originText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="icon">⏳</span> 正在导出...';
+
+        const exporter = new BookmarkExporter();
+        await exporter.exportAndDownload();
+
+        showStatus('书签备份已开始下载', 'green');
+        btn.innerHTML = '<span class="icon">✅</span> 导出成功';
+        setTimeout(() => {
+            btn.innerHTML = originText;
+            btn.disabled = false;
+        }, 2000);
+    } catch (e) {
+        showStatus('备份失败: ' + e.message, 'red');
+        document.getElementById('btnBackup').disabled = false;
+        document.getElementById('btnBackup').innerHTML = '<span class="icon">📥</span> 备份书签';
+    }
+});
 
 // Select All Logic
 document.getElementById('selectAllFolders').addEventListener('change', (e) => {
@@ -645,6 +670,31 @@ document.getElementById('btnCancelReview').addEventListener('click', () => {
 
 document.getElementById('btnExecuteInfo').addEventListener('click', async () => {
     if (!currentPlan) return;
+
+    // Auto Backup Check
+    const chkBackup = document.getElementById('chkAutoBackup');
+    if (chkBackup && chkBackup.checked) {
+        try {
+            const btnExecute = document.getElementById('btnExecuteInfo');
+            btnExecute.disabled = true;
+            btnExecute.textContent = '正在备份书签...';
+
+            showStatus('正在执行自动备份...', 'blue');
+            const exporter = new BookmarkExporter();
+            await exporter.exportAndDownload();
+            showStatus('备份已下载，准备开始整理...', 'green');
+
+            // Short delay to let user see feedback
+            await new Promise(r => setTimeout(r, 1000));
+        } catch (e) {
+            console.error('Auto backup failed:', e);
+            if (!confirm(`自动备份失败 (${e.message})。是否仍要继续执行整理？`)) {
+                document.getElementById('btnExecuteInfo').disabled = false;
+                document.getElementById('btnExecuteInfo').textContent = '确认执行';
+                return;
+            }
+        }
+    }
 
     // Special handling for duplicates:
     // If we introduced new items (swapped keepers) into the UI flow, we need to ensure they are in the plan.

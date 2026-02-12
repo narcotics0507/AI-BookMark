@@ -20,12 +20,17 @@ Supports full scanning and reorganization of a specific folder (e.g., "Bookmarks
 *   **Visual Preview**: Generates a detailed "Organization Plan" before executing any changes.
 *   **Transparent Control**: You can see exactly which folders AI suggests creating and which bookmarks moving. Uncheck any changes you don't like.
 
-### 3. Bookmark Library Maintenance
+### 3. Safe Backup
+We prioritize your data safety:
+*   **One-Click Backup**: You can export all your bookmarks as a standard HTML file at any time from the dashboard.
+*   **Auto-Backup**: By default, the system automatically backs up your bookmarks before executing any organization. You can restore your data easily if needed.
+
+### 4. Bookmark Library Maintenance
 We provide a set of tools to keep your bookmark library healthy:
 *   **Dead Link Archive**: Scans for inaccessible links. To prevent accidental deletion (e.g., temporary network issues), dead links are moved to a `失效链接归档` (Dead Link Archive) folder instead of being permanently deleted.
 *   **Duplicate Cleanup**: Identifies duplicate saved links. Merges duplicates while keeping the earliest or best-located version.
 
-### 4. Configuration & Privacy
+### 5. Configuration & Privacy
 *   **Multi-Model Support**: Built-in support for OpenAI, Google Gemini, DeepSeek, and compatible with custom interfaces like One API.
 *   **Privacy Protection**: API Keys and configurations are stored locally (LocalStorage) only. Bookmark data is sent to your specified API endpoint only during analysis and is never uploaded to third-party servers.
 
