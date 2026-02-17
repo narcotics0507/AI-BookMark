@@ -91,12 +91,42 @@ const suggestion = safeDecode(params.get('suggestion')); // AI Suggestion
 const reason = safeDecode(params.get('reason') || 'AI Decision');
 const errorMsg = safeDecode(params.get('error'));
 const oldParentId = params.get('old');
+const warningMsg = safeDecode(params.get('warning'));
 const isSamePath = params.get('same') === 'true';
 
 let autoCloseTimer = null;
 
 // --- Init ---
 function init() {
+    if (warningMsg) {
+        // Warning Mode (Import Guard)
+        document.body.classList.add('warning-mode'); // You might need to add css for this, or just inline style
+        document.querySelector('.message').textContent = '⚠️ 自动整理已暂停';
+
+        const pathEl = document.getElementById('target-path');
+        pathEl.textContent = warningMsg;
+        pathEl.style.color = '#ff9800'; // Orange
+        pathEl.style.fontSize = '0.9rem';
+        pathEl.style.fontWeight = 'normal';
+
+        // Hide unrelated elements
+        document.getElementById('title-section').style.display = 'none';
+        document.getElementById('ai-reason').style.display = 'none';
+
+        // Hide Actions except one closing button
+        document.getElementById('btnUndo').style.display = 'none';
+        document.getElementById('btnChange').style.display = 'none';
+
+        const btnConfirm = document.getElementById('btnConfirm');
+        btnConfirm.textContent = '知道了';
+        btnConfirm.style.background = '#ff9800';
+        btnConfirm.onclick = () => window.close();
+
+        // Auto close after 5s?
+        startTimer(); // reuse timer to close automatically
+        return;
+    }
+
     if (errorMsg) {
         // Error State
         document.body.classList.add('error-mode');

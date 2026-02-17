@@ -178,11 +178,92 @@ async function processBookmark(id) {
     }
 }
 
+// Import Guard State
+const IMPORT_THRESHOLD = 5; // Max bookmarks allowed in window
+const IMPORT_WINDOW = 2000; // 2 seconds window
+const IMPORT_PAUSE_DURATION = 10000; // Pause for 10 seconds after last import event
+let creationTimestamps = [];
+let isImporting = false;
+let importTimeout = null;
+
 // 1. On Created -> Start Timer
 chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
     if (!bookmark.url) return; // Ignore folders immediately
 
+    // --- IMPORT GUARD START ---
+    const now = Date.now();
+    creationTimestamps.push(now);
+    // Keep only timestamps within the window
+    creationTimestamps = creationTimestamps.filter(t => now - t < IMPORT_WINDOW);
+
+    if (creationTimestamps.length > IMPORT_THRESHOLD) {
+        // Threshold exceeded: Enter/Extend Import Mode
+        if (!isImporting) {
+            isImporting = true;
+            Logger.log(`[ImportGuard] Rapid creation detected (${creationTimestamps.length} in ${IMPORT_WINDOW}ms). Pausing auto-categorize.`);
+
+            // Clear any pending single-bookmark processing to save resources
+            processingQueue.forEach((item, key) => {
+                clearTimeout(item.timeoutId);
+                processingQueue.delete(key);
+            });
+
+            // Notify User via Popup Window (Consistent with other UIs)
+            try {
+                const width = 450;
+                const height = 200; // Small height for warning
+                // Reuse getNotificationPosition if possible, or duplicate logic if scope issue
+                // Since getNotificationPosition is defined above in the same file, we can call it.
+                // Note: getNotificationPosition is likely not hoisted if defined as const/let, but here it is function so it's fine?
+                // Wait, it's defined as async function getNotificationPosition... earlier in file. Yes.
+
+                // We need to call it async
+                getNotificationPosition(width, height).then(pos => {
+                    chrome.windows.create({
+                        url: 'src/options/quick_organize_notify.html?warning=' + encodeURIComponent('检测到批量导入书签，为保护书签结构，自动分类功能已暂停 10 秒。'),
+                        type: 'popup',
+                        width: width,
+                        height: height,
+                        left: pos.left,
+                        top: pos.top,
+                        focused: true
+                    });
+                });
+
+            } catch (e) {
+                Logger.error(`Failed to open warning popup: ${e.message}`);
+            }
+        }
+
+        // Reset/Extend the pause timer
+        if (importTimeout) clearTimeout(importTimeout);
+        importTimeout = setTimeout(() => {
+            isImporting = false;
+            creationTimestamps = []; // Reset history
+            Logger.log('[ImportGuard] Import activity stopped. Resuming normal operation.');
+            // No need to clear notification since we used a popup that auto-closes or user closes
+        }, IMPORT_PAUSE_DURATION);
+
+        return; // EXIT IMMEDIATELY - Do not queue for processing
+    }
+
+    if (isImporting) {
+        // Still in import mode (within the pause duration), just extend timer and exit
+        if (importTimeout) clearTimeout(importTimeout);
+        importTimeout = setTimeout(() => {
+            isImporting = false;
+            creationTimestamps = [];
+            Logger.log('[ImportGuard] Import activity stopped. Resuming normal operation.');
+            chrome.notifications.clear('import-guard-notify');
+        }, IMPORT_PAUSE_DURATION);
+        return;
+    }
+    // --- IMPORT GUARD END ---
+
     // Check settings early to avoid setting timers unnecessarily?
+
+    // Quick check logic to avoid checking storage for EVERY bookmark if we can cache it? 
+    // For now, let's just stick to the debounce logic which is robust.
 
     Logger.log(`New bookmark created: ${bookmark.title}. Waiting ${DEBOUNCE_DELAY}ms...`);
 
