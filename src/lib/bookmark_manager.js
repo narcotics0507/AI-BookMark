@@ -36,7 +36,11 @@ export class BookmarkManager {
 
             let currentPath = parentPath;
             if (node.title && node.id !== '0') {
-                currentPath = parentPath ? `${parentPath}/${node.title}` : node.title;
+                if (!node.url) {
+                    currentPath = parentPath ? `${parentPath}/${node.title}` : node.title;
+                } else {
+                    currentPath = parentPath;
+                }
             }
 
             const item = {

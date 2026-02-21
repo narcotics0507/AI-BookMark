@@ -122,8 +122,13 @@ async function processBookmark(id) {
             // Re-check parent in case user moved it at the very last millisecond
             const [currentBm] = await new Promise(r => chrome.bookmarks.get(id, r));
             if (currentBm.parentId !== originalParentId) {
-                Logger.log('Bookmark moved externally during processing. Aborting move.');
-                return;
+                if (currentBm.parentId === targetId) {
+                    Logger.log('Bookmark already moved to target during processing. Notifying user.');
+                    isSamePath = true;
+                } else {
+                    Logger.log(`Bookmark moved externally during processing (from ${originalParentId} to ${currentBm.parentId}). Aborting move.`);
+                    return;
+                }
             }
 
             if (targetId === originalParentId) {
