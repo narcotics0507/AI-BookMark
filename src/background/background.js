@@ -24,23 +24,36 @@ const processingQueue = new Map();
 const DEBOUNCE_DELAY = 4000; // 4 seconds
 
 // Cache for folder structure to speed up AI context
-let folderCache = null;
+let contextCache = null; // { allPaths, tree }
 let lastCacheTime = 0;
 const CACHE_TTL = 1000 * 60 * 5; // 5 minutes cache
 
 async function getFolderContext(bm) {
     const now = Date.now();
-    if (folderCache && (now - lastCacheTime < CACHE_TTL)) {
-        return folderCache;
+    if (contextCache && (now - lastCacheTime < CACHE_TTL)) {
+        return contextCache;
     }
 
     const tree = await bm.getTree();
     const flatList = bm.flatten(tree);
     const allPaths = Array.from(new Set(flatList.map(i => i.path).filter(p => p))).join(', ');
 
-    folderCache = allPaths;
+    contextCache = { allPaths, tree };
     lastCacheTime = now;
-    return allPaths;
+    return contextCache;
+}
+
+/**
+ * 从书签树中获取根节点（书签栏、其他书签）
+ * 不依赖硬编码 ID，兼容所有平台和 Chrome 版本
+ */
+function getRootNodes(tree) {
+    const root = tree[0];
+    if (!root || !root.children) return { barNode: null, otherNode: null };
+    // Chrome 书签树结构: root -> [书签栏, 其他书签, (移动端书签)]
+    const barNode = root.children[0] || null;    // 书签栏 (Bookmarks Bar)
+    const otherNode = root.children[1] || null;  // 其他书签 (Other Bookmarks)
+    return { barNode, otherNode };
 }
 
 // Core Processing Logic (Extracted)
@@ -70,14 +83,30 @@ async function getNotificationPosition(width, height) {
     return { left, top };
 }
 
+// 安全获取书签，处理书签已被删除的情况
+async function safeGetBookmark(id) {
+    return new Promise(resolve => {
+        chrome.bookmarks.get(id, (results) => {
+            if (chrome.runtime.lastError || !results || results.length === 0) {
+                resolve(null);
+            } else {
+                resolve(results[0]);
+            }
+        });
+    });
+}
+
 async function processBookmark(id) {
     // Remove from queue processing
     processingQueue.delete(id);
 
     try {
         // Fetch latest bookmark data (title/url might have changed during debounce)
-        const [bookmark] = await new Promise(r => chrome.bookmarks.get(id, r));
-        if (!bookmark || !bookmark.url) return;
+        const bookmark = await safeGetBookmark(id);
+        if (!bookmark || !bookmark.url) {
+            Logger.log(`Bookmark ${id} no longer exists or has no URL. Skipping.`);
+            return;
+        }
 
         // 2. Check Settings
         const config = await chrome.storage.sync.get(['autoCategorize', 'apiProvider', 'apiEndpoint', 'apiKey', 'modelName', 'targetLanguage']);
@@ -89,7 +118,7 @@ async function processBookmark(id) {
         const bm = new BookmarkManager();
 
         // 3. Get Context (Optimized)
-        const allPaths = await getFolderContext(bm);
+        const { allPaths, tree } = await getFolderContext(bm);
         Logger.log(`Context loaded. Paths length: ${allPaths.length}`);
 
         // 4. Classify
@@ -100,22 +129,25 @@ async function processBookmark(id) {
             let targetPath = result.path;
             const originalParentId = bookmark.parentId;
 
-            // Handle Root Folders in Path
-            const [barNode] = await new Promise(r => chrome.bookmarks.get('1', r));
-            const [otherNode] = await new Promise(r => chrome.bookmarks.get('2', r));
+            // Handle Root Folders in Path (从 getTree 获取，不硬编码 ID，兼容 Windows/macOS)
+            const { barNode, otherNode } = getRootNodes(tree);
+            if (!barNode || !otherNode) {
+                Logger.error('Failed to get root bookmark nodes from tree.');
+                return;
+            }
 
-            let rootId = '1'; // Default
+            let rootId = barNode.id; // Default to Bookmarks Bar
             let relativePath = targetPath;
 
             if (targetPath.startsWith(barNode.title)) {
-                rootId = '1';
+                rootId = barNode.id;
                 if (targetPath === barNode.title) {
                     relativePath = '';
                 } else if (targetPath.startsWith(barNode.title + '/')) {
                     relativePath = targetPath.substring(barNode.title.length + 1);
                 }
             } else if (targetPath.startsWith(otherNode.title)) {
-                rootId = '2';
+                rootId = otherNode.id;
                 if (targetPath === otherNode.title) {
                     relativePath = '';
                 } else if (targetPath.startsWith(otherNode.title + '/')) {
@@ -130,7 +162,11 @@ async function processBookmark(id) {
             }
             let isSamePath = false;
             // Re-check parent in case user moved it at the very last millisecond
-            const [currentBm] = await new Promise(r => chrome.bookmarks.get(id, r));
+            const currentBm = await safeGetBookmark(id);
+            if (!currentBm) {
+                Logger.log(`Bookmark ${id} was deleted during processing. Skipping.`);
+                return;
+            }
             if (currentBm.parentId !== originalParentId) {
                 if (currentBm.parentId === targetId) {
                     Logger.log('Bookmark already moved to target during processing. Notifying user.');
